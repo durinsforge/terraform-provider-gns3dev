@@ -114,6 +114,12 @@ func resourceGns3Qemu() *schema.Resource {
 				Optional: true,
 				Default:  0,
 			},
+			"symbol": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "ID of the graphical symbol representing the node on the GNS3 canvas.",
+				Default:     ":/symbols/classic/computer.svg",
+			},
 		},
 	}
 }
@@ -134,6 +140,7 @@ func resourceGns3QemuCreate(d *schema.ResourceData, meta interface{}) error {
 	platform := d.Get("platform").(string)
 	x := d.Get("x").(int)
 	y := d.Get("y").(int)
+	symbol := d.Get("symbol").(string)
 
 	properties := map[string]interface{}{
 		"adapter_type": adapterType,
@@ -170,6 +177,7 @@ func resourceGns3QemuCreate(d *schema.ResourceData, meta interface{}) error {
 		"compute_id": "local", // adjust if needed
 		"x":          x,
 		"y":          y,
+		"symbol":     symbol,
 		"properties": properties,
 	}
 
