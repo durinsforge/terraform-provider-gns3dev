@@ -130,23 +130,34 @@ func resourceGns3TemplateRead(d *schema.ResourceData, meta interface{}) error {
 	projectID := d.Get("project_id").(string)
 	nodeID := d.Id()
 
-	url := fmt.Sprintf("%s/v2/projects/%s/nodes/%s", host, projectID, nodeID)
-	resp, err := http.Get(url)
+	// Use the controller's project/node endpoint, not the compute API path
+	apiURL := fmt.Sprintf("%s/v2/projects/%s/nodes/%s", host, projectID, nodeID)
+	resp, err := http.Get(apiURL)
 	if err != nil {
-		return fmt.Errorf("error reading GNS3 node (template): %s", err)
+		return fmt.Errorf("failed to read template node: %s", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusNotFound {
 		d.SetId("")
 		return nil
-	}
-
-	if resp.StatusCode != http.StatusOK {
+	} else if resp.StatusCode != http.StatusOK {
 		body, _ := ioutil.ReadAll(resp.Body)
-		return fmt.Errorf("failed to read template node, status code: %d, response: %s", resp.StatusCode, string(body))
+		return fmt.Errorf("failed to read template node, status: %d, response: %s", resp.StatusCode, body)
 	}
 
+	var node map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&node); err != nil {
+		return fmt.Errorf("failed to decode node details: %s", err)
+	}
+
+	d.Set("name", node["name"])
+	if xVar, ok := node["x"].(float64); ok {
+		d.Set("x", int(xVar))
+	}
+	if yVar, ok := node["y"].(float64); ok {
+		d.Set("y", int(yVar))
+	}
 	return nil
 }
 
@@ -154,7 +165,8 @@ func resourceGns3TemplateUpdate(d *schema.ResourceData, meta interface{}) error 
 	config := meta.(*ProviderConfig)
 	host := config.Host
 	projectID := d.Get("project_id").(string)
-	templateID := d.Id()
+	// templateID := d.Id()
+	nodeID := d.Id()
 
 	// Build the update payload with the updated attributes.
 	updateData := map[string]interface{}{
@@ -170,7 +182,7 @@ func resourceGns3TemplateUpdate(d *schema.ResourceData, meta interface{}) error 
 	}
 
 	// Send a PUT request to update the template.
-	url := fmt.Sprintf("%s/v2/projects/%s/nodes/%s", host, projectID, templateID)
+	url := fmt.Sprintf("%s/v2/projects/%s/nodes/%s", host, projectID, nodeID)
 	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(data))
 	if err != nil {
 		return fmt.Errorf("failed to create update request: %s", err)

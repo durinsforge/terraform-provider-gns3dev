@@ -104,6 +104,16 @@ func resourceGns3Qemu() *schema.Resource {
 				Optional:    true,
 				Description: "Path to the HDA (bootable) disk image file for the QEMU node",
 			},
+			"x": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Default:  0,
+			},
+			"y": {
+				Type:     schema.TypeInt,
+				Optional: true,
+				Default:  0,
+			},
 		},
 	}
 }
@@ -122,6 +132,8 @@ func resourceGns3QemuCreate(d *schema.ResourceData, meta interface{}) error {
 	cpus := d.Get("cpus").(int)
 	ram := d.Get("ram").(int)
 	platform := d.Get("platform").(string)
+	x := d.Get("x").(int)
+	y := d.Get("y").(int)
 
 	properties := map[string]interface{}{
 		"adapter_type": adapterType,
@@ -156,6 +168,8 @@ func resourceGns3QemuCreate(d *schema.ResourceData, meta interface{}) error {
 		"name":       name,
 		"node_type":  "qemu",
 		"compute_id": "local", // adjust if needed
+		"x":          x,
+		"y":          y,
 		"properties": properties,
 	}
 
@@ -210,11 +224,12 @@ func resourceGns3QemuCreate(d *schema.ResourceData, meta interface{}) error {
 
 func resourceGns3QemuRead(d *schema.ResourceData, meta interface{}) error {
 	config := meta.(*ProviderConfig)
+	host := config.Host
 	projectID := d.Get("project_id").(string)
 	nodeID := d.Id()
 
 	// Use the controller's project/node endpoint, not the compute API path
-	apiURL := fmt.Sprintf("%s/v2/projects/%s/nodes/%s", config.Host, projectID, nodeID)
+	apiURL := fmt.Sprintf("%s/v2/projects/%s/nodes/%s", host, projectID, nodeID)
 	resp, err := http.Get(apiURL)
 	if err != nil {
 		return fmt.Errorf("failed to read QEMU node: %s", err)
@@ -235,11 +250,86 @@ func resourceGns3QemuRead(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	d.Set("name", node["name"])
+	if xVar, ok := node["x"].(float64); ok {
+		d.Set("x", int(xVar))
+	}
+	if yVar, ok := node["y"].(float64); ok {
+		d.Set("y", int(yVar))
+	}
+	if props, ok := node["properties"].(map[string]interface{}); ok {
+		if v, ok := props["adapter_type"].(string); ok && v != "" {
+			d.Set("adapter_type", v)
+		}
+	}
+	if props, ok := node["properties"].(map[string]interface{}); ok {
+		if v, ok := props["adapters"].(float64); ok {
+			d.Set("adapters", v)
+		}
+	}
+	if props, ok := node["properties"].(map[string]interface{}); ok {
+		if v, ok := props["bios_image"].(string); ok {
+			d.Set("bios_image", v)
+		}
+	}
+	if props, ok := node["properties"].(map[string]interface{}); ok {
+		if v, ok := props["cdrom_image"].(string); ok {
+			d.Set("cdrom_image", v)
+		}
+	}
+	if props, ok := node["properties"].(map[string]interface{}); ok {
+		if v, ok := props["cpus"].(float64); ok && v != 0 {
+			d.Set("cpus", v)
+		}
+	}
 	return nil
 }
 
 func resourceGns3QemuUpdate(d *schema.ResourceData, meta interface{}) error {
-	// For simplicity, this example does not implement updates.
+	config := meta.(*ProviderConfig)
+	host := config.Host
+	projectID := d.Get("project_id").(string)
+	nodeID := d.Id()
+
+	// Build the update payload with the updated attributes.
+	properties := map[string]interface{}{
+		"adapter_type": d.Get("adapter_type").(string),
+		"adapters":     d.Get("adapters").(int),
+		"bios_image":   d.Get("bios_image").(string),
+		"cdrom_image":  d.Get("cdrom_image").(string),
+		"cpus":         d.Get("cpus").(int),
+	}
+
+	updateData := map[string]interface{}{
+		"name":       d.Get("name").(string),
+		"x":          d.Get("x").(int),
+		"y":          d.Get("y").(int),
+		"properties": properties,
+	}
+
+	data, err := json.Marshal(updateData)
+	if err != nil {
+		return fmt.Errorf("failed to marshal update data: %s", err)
+	}
+
+	// Send a PUT request to update the template.
+	url := fmt.Sprintf("%s/v2/projects/%s/nodes/%s", host, projectID, nodeID)
+	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(data))
+	if err != nil {
+		return fmt.Errorf("failed to create update request: %s", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to update QEMU node: %s", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to update QEMU node, status code: %d", resp.StatusCode)
+	}
+
 	return resourceGns3QemuRead(d, meta)
 }
 
