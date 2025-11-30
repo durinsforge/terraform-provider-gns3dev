@@ -1,4 +1,4 @@
-module github.com/NetOpsChic/terraform-provider-gns3
+module github.com/durinsforge/terraform-provider-gns3dev
 
 go 1.22.0
 
