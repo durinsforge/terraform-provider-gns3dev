@@ -70,7 +70,7 @@ func resourceGns3Switch() *schema.Resource {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Description: "ID of the graphical symbol representing the node on the GNS3 canvas.",
-				Default:     ":/symbols/classic/cloud.svg",
+				Default:     ":/symbols/classic/atm_switch.svg",
 			},
 		},
 	}
@@ -93,7 +93,7 @@ func resourceGns3SwitchCreate(d *schema.ResourceData, meta interface{}) error {
 		ComputeID: computeID,
 		X:         x,
 		Y:         y,
-		Symbol: symbol,
+		Symbol:    symbol,
 	}
 
 	data, err := json.Marshal(sw)
