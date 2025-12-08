@@ -73,12 +73,12 @@ func resourceGns3Docker() *schema.Resource {
 					Type: schema.TypeString,
 				},
 			},
-			"x": { // Added X coordinate support
+			"x": { 
 				Type:        schema.TypeInt,
 				Optional:    true,
 				Description: "The X coordinate for positioning the Docker node in GNS3 GUI.",
 			},
-			"y": { // Added Y coordinate support
+			"y": { 
 				Type:        schema.TypeInt,
 				Optional:    true,
 				Description: "The Y coordinate for positioning the Docker node in GNS3 GUI.",

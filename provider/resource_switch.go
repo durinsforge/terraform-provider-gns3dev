@@ -50,12 +50,12 @@ func resourceGns3Switch() *schema.Resource {
 				Default:     "local",
 				Description: "Compute ID where the switch node is running.",
 			},
-			"x": { // ✅ Added X coordinate support
+			"x": { 
 				Type:        schema.TypeInt,
 				Optional:    true,
 				Description: "X position of the switch node in GNS3 GUI.",
 			},
-			"y": { // ✅ Added Y coordinate support
+			"y": { 
 				Type:        schema.TypeInt,
 				Optional:    true,
 				Description: "Y position of the switch node in GNS3 GUI.",
@@ -75,8 +75,8 @@ func resourceGns3SwitchCreate(d *schema.ResourceData, meta interface{}) error {
 	projectID := d.Get("project_id").(string)
 	name := d.Get("name").(string)
 	computeID := d.Get("compute_id").(string)
-	x := d.Get("x").(int) // ✅ Retrieve X coordinate
-	y := d.Get("y").(int) // ✅ Retrieve Y coordinate
+	x := d.Get("x").(int) 
+	y := d.Get("y").(int) 
 
 	// Build the payload with X and Y coordinates
 	sw := Switch{
@@ -137,11 +137,11 @@ func resourceGns3SwitchUpdate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	if d.HasChange("x") {
-		updateData["x"] = d.Get("x").(int) // ✅ Update X coordinate
+		updateData["x"] = d.Get("x").(int) 
 	}
 
 	if d.HasChange("y") {
-		updateData["y"] = d.Get("y").(int) // ✅ Update Y coordinate
+		updateData["y"] = d.Get("y").(int) 
 	}
 
 	if len(updateData) == 0 {
