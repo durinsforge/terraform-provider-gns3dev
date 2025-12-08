@@ -153,6 +153,10 @@ func resourceGns3SwitchUpdate(d *schema.ResourceData, meta interface{}) error {
 		updateData["y"] = d.Get("y").(int) 
 	}
 
+	if d.HasChange("symbol") {
+		updateData["symbol"] = d.Get("symbol").(string) 
+	}
+
 	if len(updateData) == 0 {
 		return nil
 	}
