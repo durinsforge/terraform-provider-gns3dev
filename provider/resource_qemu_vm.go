@@ -288,6 +288,7 @@ func resourceGns3QemuRead(d *schema.ResourceData, meta interface{}) error {
 		if v, ok := props["cpus"].(float64); ok && v != 0 {
 			d.Set("cpus", v)
 		}
+	
 	}
 	return nil
 }
@@ -298,20 +299,79 @@ func resourceGns3QemuUpdate(d *schema.ResourceData, meta interface{}) error {
 	projectID := d.Get("project_id").(string)
 	nodeID := d.Id()
 
-	// Build the update payload with the updated attributes.
-	properties := map[string]interface{}{
-		"adapter_type": d.Get("adapter_type").(string),
-		"adapters":     d.Get("adapters").(int),
-		"bios_image":   d.Get("bios_image").(string),
-		"cdrom_image":  d.Get("cdrom_image").(string),
-		"cpus":         d.Get("cpus").(int),
+	updateData := map[string]interface{}{}
+	properties := map[string]interface{}{}
+
+	// Top-level fields
+	if d.HasChange("name") {
+		updateData["name"] = d.Get("name").(string)
 	}
 
-	updateData := map[string]interface{}{
-		"name":       d.Get("name").(string),
-		"x":          d.Get("x").(int),
-		"y":          d.Get("y").(int),
-		"properties": properties,
+	if d.HasChange("x") {
+		updateData["x"] = d.Get("x").(int)
+	}
+
+	if d.HasChange("y") {
+		updateData["y"] = d.Get("y").(int)
+	}
+
+	if d.HasChange("symbol") {
+		updateData["symbol"] = d.Get("symbol").(string)
+	}
+
+	// QEMU-specific properties (inside "properties")
+	if d.HasChange("adapter_type") {
+		properties["adapter_type"] = d.Get("adapter_type").(string)
+	}
+
+	if d.HasChange("adapters") {
+		properties["adapters"] = d.Get("adapters").(int)
+	}
+
+	if d.HasChange("bios_image") {
+		properties["bios_image"] = d.Get("bios_image").(string)
+	}
+
+	if d.HasChange("cdrom_image") {
+		properties["cdrom_image"] = d.Get("cdrom_image").(string)
+	}
+
+	if d.HasChange("cpus") {
+		properties["cpus"] = d.Get("cpus").(int)
+	}
+
+	if d.HasChange("ram") {
+		properties["ram"] = d.Get("ram").(int)
+	}
+
+	if d.HasChange("console_type") {
+		properties["console_type"] = d.Get("console_type").(string)
+	}
+
+	if d.HasChange("platform") {
+		properties["platform"] = d.Get("platform").(string)
+	}
+
+	if d.HasChange("hda_disk_image") {
+		properties["hda_disk_image"] = d.Get("hda_disk_image").(string)
+	}
+
+	if d.HasChange("mac_address") {
+		properties["mac_address"] = d.Get("mac_address").(string)
+	}
+
+	if d.HasChange("options") {
+		properties["options"] = d.Get("options").(string)
+	}
+
+	// Only include "properties" if we actually changed something in it
+	if len(properties) > 0 {
+		updateData["properties"] = properties
+	}
+
+	// Nothing to update
+	if len(updateData) == 0 {
+		return nil
 	}
 
 	data, err := json.Marshal(updateData)
@@ -319,7 +379,6 @@ func resourceGns3QemuUpdate(d *schema.ResourceData, meta interface{}) error {
 		return fmt.Errorf("failed to marshal update data: %s", err)
 	}
 
-	// Send a PUT request to update the template.
 	url := fmt.Sprintf("%s/v2/projects/%s/nodes/%s", host, projectID, nodeID)
 	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(data))
 	if err != nil {
@@ -335,12 +394,12 @@ func resourceGns3QemuUpdate(d *schema.ResourceData, meta interface{}) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to update QEMU node, status code: %d", resp.StatusCode)
+		bodyBytes, _ := ioutil.ReadAll(resp.Body)
+		return fmt.Errorf("failed to update QEMU node, status code: %d, response: %s", resp.StatusCode, string(bodyBytes))
 	}
 
 	return resourceGns3QemuRead(d, meta)
 }
-
 func resourceGns3QemuDelete(d *schema.ResourceData, meta interface{}) error {
 	config := meta.(*ProviderConfig)
 	projectID := d.Get("project_id").(string)
