@@ -20,6 +20,7 @@ type Cloud struct {
 	NodeID    string `json:"node_id,omitempty"`
 	X         int    `json:"x,omitempty"`
 	Y         int    `json:"y,omitempty"`
+	Symbol    string `json:"symbol,omitempty"`
 }
 
 func resourceGns3Cloud() *schema.Resource {
@@ -64,6 +65,12 @@ func resourceGns3Cloud() *schema.Resource {
 				Computed:    true,
 				Description: "The cloud node's ID assigned by GNS3.",
 			},
+			"symbol": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "ID of the graphical symbol representing the node on the GNS3 canvas.",
+				Default:     ":/symbols/classic/cloud.svg",
+			},
 		},
 	}
 }
@@ -76,6 +83,7 @@ func resourceGns3CloudCreate(d *schema.ResourceData, meta interface{}) error {
 	computeID := d.Get("compute_id").(string)
 	x := d.Get("x").(int) // ✅ Retrieve X coordinate
 	y := d.Get("y").(int) // ✅ Retrieve Y coordinate
+	symbol := d.Get("symbol").(string)
 
 	cloud := Cloud{
 		Name:      name,
@@ -83,6 +91,7 @@ func resourceGns3CloudCreate(d *schema.ResourceData, meta interface{}) error {
 		ComputeID: computeID,
 		X:         x, // ✅ Add X coordinate to request
 		Y:         y, // ✅ Add Y coordinate to request
+		Symbol:    symbol,
 	}
 
 	data, err := json.Marshal(cloud)
@@ -140,6 +149,10 @@ func resourceGns3CloudUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	if d.HasChange("y") {
 		updateData["y"] = d.Get("y").(int) // ✅ Update Y coordinate
+	}
+
+	if d.HasChange("symbol") {
+		updateData["symbol"] = d.Get("symbol").(string)
 	}
 
 	if len(updateData) == 0 {

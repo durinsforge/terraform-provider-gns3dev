@@ -20,6 +20,7 @@ type Switch struct {
 	NodeID    string `json:"node_id,omitempty"`
 	X         int    `json:"x,omitempty"`
 	Y         int    `json:"y,omitempty"`
+	Symbol    string `json:"symbol,omitempty"`
 }
 
 // resourceGns3Switch defines the Terraform resource schema for GNS3 switch nodes.
@@ -65,6 +66,12 @@ func resourceGns3Switch() *schema.Resource {
 				Computed:    true,
 				Description: "The switch node's ID assigned by GNS3.",
 			},
+			"symbol": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "ID of the graphical symbol representing the node on the GNS3 canvas.",
+				Default:     ":/symbols/classic/ethernet_switch.svg",
+			},
 		},
 	}
 }
@@ -77,6 +84,7 @@ func resourceGns3SwitchCreate(d *schema.ResourceData, meta interface{}) error {
 	computeID := d.Get("compute_id").(string)
 	x := d.Get("x").(int) // ✅ Retrieve X coordinate
 	y := d.Get("y").(int) // ✅ Retrieve Y coordinate
+	symbol := d.Get("symbol").(string)
 
 	// Build the payload with X and Y coordinates
 	sw := Switch{
@@ -85,6 +93,7 @@ func resourceGns3SwitchCreate(d *schema.ResourceData, meta interface{}) error {
 		ComputeID: computeID,
 		X:         x,
 		Y:         y,
+		Symbol:    symbol,
 	}
 
 	data, err := json.Marshal(sw)
@@ -142,6 +151,10 @@ func resourceGns3SwitchUpdate(d *schema.ResourceData, meta interface{}) error {
 
 	if d.HasChange("y") {
 		updateData["y"] = d.Get("y").(int) // ✅ Update Y coordinate
+	}
+
+	if d.HasChange("symbol") {
+		updateData["symbol"] = d.Get("symbol").(string)
 	}
 
 	if len(updateData) == 0 {
